@@ -1,0 +1,40 @@
+// Vertex shader
+
+struct CameraState {
+    window_scaling: vec2<f32>,
+    zoom: f32,
+}
+@group(0)
+@binding(0)
+var<uniform> cam_state: CameraState;
+
+struct VertexInput {
+    @location(0) position: vec3<f32>,
+    @location(1) color: vec3<f32>,
+};
+
+struct VertexOutput {
+    @builtin(position) clip_position: vec4<f32>,
+    @location(0) color: vec3<f32>,
+};
+
+@vertex
+fn vs_main(
+    @builtin(vertex_index) in_vertex_index: u32,
+    model: VertexInput,
+) -> VertexOutput {
+    var out: VertexOutput;
+    out.color = model.color;
+    out.clip_position = vec4<f32>(
+        model.position.x*cam_state.window_scaling.x*cam_state.zoom,
+        model.position.y*cam_state.window_scaling.y*cam_state.zoom,
+        model.position.z,
+        1.0
+    );
+    return out;
+}
+
+@fragment
+fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
+    return vec4<f32>(in.color, 1.0);
+}
