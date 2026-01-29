@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use wgpu::{TextureDescriptor, TextureDimension, TextureFormat};
 use winit::{
     window::Window,
     dpi::PhysicalSize
@@ -166,7 +165,7 @@ impl State {
             }
         );
         let depth_texture = device.create_texture(
-            &TextureDescriptor {
+            &wgpu::TextureDescriptor {
                 label: Some("Depth Texture"),
                 size: wgpu::Extent3d {
                     width: size.width.max(1),
@@ -175,8 +174,8 @@ impl State {
                 },
                 mip_level_count: 1,
                 sample_count: 1,
-                dimension: TextureDimension::D2,
-                format: TextureFormat::Depth32Float,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Depth32Float,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
                 view_formats: &[],
             }
@@ -241,7 +240,13 @@ impl State {
         self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_state]));
     }
 
-    pub fn resize(&mut self, mut new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn move_camera(&mut self, dx: f32, dy: f32) {
+        self.camera_state.pos_x += dx;
+        self.camera_state.pos_y += dy;
+        self.update_state();
+    }
+
+    pub fn resize(&mut self, mut new_size: PhysicalSize<u32>) {
         if new_size.width <= 0 {
             new_size.width = 1; // to not crush
         }
@@ -252,7 +257,7 @@ impl State {
         self.configure_surface();
         self.update_state();
         self.depth_texture = self.device.create_texture(
-            &TextureDescriptor {
+            &wgpu::TextureDescriptor {
                 label: Some("Depth Texture"),
                 size: wgpu::Extent3d {
                     width: self.size.width.max(1),
@@ -261,8 +266,8 @@ impl State {
                 },
                 mip_level_count: 1,
                 sample_count: 1,
-                dimension: TextureDimension::D2,
-                format: TextureFormat::Depth32Float,
+                dimension: wgpu::TextureDimension::D2,
+                format: wgpu::TextureFormat::Depth32Float,
                 usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
                 view_formats: &[],
             }

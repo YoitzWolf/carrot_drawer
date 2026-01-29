@@ -1,9 +1,8 @@
-use std::sync::{Arc, Mutex};
-// use wgpu::VertexStepMode::Vertex;
+use std::sync::Arc;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
 use winit::event::{KeyEvent, WindowEvent};
-use winit::event_loop::{ActiveEventLoop, EventLoop};
+use winit::event_loop::ActiveEventLoop;
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::Window;
 use crate::core::*;
@@ -19,7 +18,6 @@ pub struct App {
 
 impl App {
     pub fn new(#[cfg(target_arch = "wasm32")] event_loop: &EventLoop<State>) -> Self {
-        
         Self {
             state: None,
         }
@@ -91,21 +89,41 @@ impl ApplicationHandler<State> for App {
                 ..
             } => match (code, state.is_pressed()) {
                 (KeyCode::Escape, true) => event_loop.exit(),
-                _ => {
-                    let draw_vertices = BasicContour::NPolygon(59).to_vertex_list().first().unwrap().clone();
-                    let draw_indexes = triangulate_2d(&draw_vertices).unwrap(); //vec![
-                    let draw_vertices = draw_vertices.iter().map(
-                        |v| {
-                            Vertex {
-                                position: [v.x, v.y, v.z],
-                                color: [1.0, 1.0, 1.0],
-                            }
-                        }
-                    ).collect();
-                    render_state.update_render_buffer(
-                        &draw_vertices, &draw_indexes
-                    );
+                (KeyCode::ArrowLeft, _) => {
+                    println!("ArrowLeft");
+                    render_state.move_camera(-0.1, 0.0);
                     render_state.render();
+                },
+                (KeyCode::ArrowRight, _) => {
+                    println!("ArrowRight");
+                    render_state.move_camera(0.1, 0.0);
+                    render_state.render();
+                },
+                (KeyCode::ArrowUp, _) => {
+                    println!("ArrowLeft");
+                    render_state.move_camera(0.0, 0.1);
+                    render_state.render();
+                },
+                (KeyCode::ArrowDown, _) => {
+                    println!("ArrowRight");
+                    render_state.move_camera(0.0, -0.1);
+                    render_state.render();
+                },
+                _ => {
+                    // let draw_vertices = BasicContour::NPolygon(59).to_vertex_list().first().unwrap().clone();
+                    // let draw_indexes = triangulate_2d(&draw_vertices).unwrap(); //vec![
+                    // let draw_vertices = draw_vertices.iter().map(
+                    //     |v| {
+                    //         Vertex {
+                    //             position: [v.x, v.y, v.z],
+                    //             color: [1.0, 1.0, 1.0],
+                    //         }
+                    //     }
+                    // ).collect();
+                    // render_state.update_render_buffer(
+                    //     &draw_vertices, &draw_indexes
+                    // );
+                    // render_state.render();
                 }
             },
             _ => {}

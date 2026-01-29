@@ -1,6 +1,8 @@
 // Vertex shader
 
 struct CameraState {
+    x: f32,
+    y: f32,
     window_scaling: vec2<f32>,
     zoom: f32,
 }
@@ -26,8 +28,8 @@ fn vs_main(
     var out: VertexOutput;
     out.color = model.color;
     out.clip_position = vec4<f32>(
-        model.position.x *cam_state.window_scaling.x*cam_state.zoom,
-        model.position.y *cam_state.window_scaling.y*cam_state.zoom,
+        (model.position.x + cam_state.x) *cam_state.window_scaling.x*cam_state.zoom,
+        (model.position.y + cam_state.y) *cam_state.window_scaling.y*cam_state.zoom,
         model.position.z,
         1.0
     );

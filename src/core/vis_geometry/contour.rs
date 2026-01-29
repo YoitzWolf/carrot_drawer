@@ -1,14 +1,10 @@
 use glam::Vec3;
-use crate::core::vis_geometry::Vertex;
 
-// pub type PolygonList<const N: usize> = (Vec<Vertex<N>>, Vec<u32>);
-
-pub enum CrossSectionSolver {
-    Sum,
-    Sub,
-    Xor,
-
-}
+// pub enum CrossSectionSolver {
+//     Sum,
+//     Sub,
+//     Xor,
+// }
 
 pub trait Contour {
     fn to_vertex_list(&self) -> Vec<Vec<Vec3>>;

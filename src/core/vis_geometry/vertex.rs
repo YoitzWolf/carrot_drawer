@@ -1,4 +1,3 @@
-use bytemuck::Zeroable;
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -14,7 +13,7 @@ unsafe impl<const N: usize> bytemuck::Pod for Vertex<N> {}
 impl<const N: usize> Vertex<N> {
     pub fn desc() -> wgpu::VertexBufferLayout<'static> {
         wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex<N>>() as wgpu::BufferAddress,
+            array_stride: size_of::<Vertex<N>>() as wgpu::BufferAddress,
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
@@ -23,7 +22,7 @@ impl<const N: usize> Vertex<N> {
                     format: wgpu::VertexFormat::Float32x3,
                 },
                 wgpu::VertexAttribute {
-                    offset: std::mem::size_of::<[f32; N]>() as wgpu::BufferAddress,
+                    offset: size_of::<[f32; N]>() as wgpu::BufferAddress,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x3,
                 }
