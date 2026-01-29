@@ -11,16 +11,15 @@ use wgpu::util::DeviceExt;
 use crate::core::camera::*;
 use crate::core::vis_geometry::vertex::*;
 
-const VERTICES: &[Vertex<3>] = &[
-    Vertex { position: [0.0, 0.5,   0.1], color: [1.0, 0.0, 0.0] },
-    Vertex { position: [-0.5, -0.5, 0.5], color: [0.0, 1.0, 0.0] },
-    Vertex { position: [0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0] },
-
-
-    Vertex { position: [0.0, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
-    Vertex { position: [0.5, 0.5,  0.5], color:  [0.0, 1.0, 1.0] },
-    Vertex { position: [-0.5, 0.5, 0.5], color: [1.0, 0.0, 1.0] },
-];
+// const VERTICES: &[Vertex<3>] = &[
+//     Vertex { position: [0.0, 0.5,   0.1], color: [1.0, 0.0, 0.0] },
+//     Vertex { position: [-0.5, -0.5, 0.5], color: [0.0, 1.0, 0.0] },
+//     Vertex { position: [0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0] },
+//
+//     Vertex { position: [0.0, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
+//     Vertex { position: [0.5, 0.5,  0.5], color:  [0.0, 1.0, 1.0] },
+//     Vertex { position: [-0.5, 0.5, 0.5], color: [1.0, 0.0, 1.0] },
+// ];
 
 // This will store the state of our game
 pub struct State {
@@ -31,16 +30,18 @@ pub struct State {
     surface_format: wgpu::TextureFormat,
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
+    index_buffer: wgpu::Buffer,
     camera_state: CameraState,
     camera_buffer: wgpu::Buffer, // uniform
     camera_bind_group: wgpu::BindGroup,
     depth_texture: wgpu::Texture,
     depth_view: wgpu::TextureView,
     window: Arc<Window>,
+    index_size: u32,
 }
 
 impl State {
-    pub async fn new(window: Arc<Window>) -> anyhow::Result<Self> {
+    pub async fn new(window: Arc<Window>, vertices: Arc<Vec<Vertex<3>>>, indexes: Arc<Vec<u32>>) -> anyhow::Result<Self> {
         let size = window.inner_size();
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
@@ -71,8 +72,15 @@ impl State {
         let vertex_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(VERTICES),
+                contents: bytemuck::cast_slice(&vertices),
                 usage: wgpu::BufferUsages::VERTEX,
+            }
+        );
+        let index_buffer = device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(&indexes),
+                usage: wgpu::BufferUsages::INDEX,
             }
         );
         let mut camera_state = CameraState::new();
@@ -193,12 +201,15 @@ impl State {
             surface_format,
             render_pipeline,
             vertex_buffer,
+            index_buffer,
             camera_state,
             camera_buffer,
             camera_bind_group,
             depth_texture,
             depth_view,
             window,
+            //vertices,
+            index_size: indexes.len() as u32,
         };
         state.configure_surface();
         Ok(state)
@@ -292,10 +303,12 @@ impl State {
             multiview_mask: None,
         });
         // drawing commands
+        println!("indexes: {:?}", 0..self.index_size);
         renderpass.set_pipeline(&self.render_pipeline);
         renderpass.set_bind_group(0, &self.camera_bind_group, &[]);
         renderpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        renderpass.draw(0..VERTICES.len() as u32, 0..1);
+        renderpass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
+        renderpass.draw_indexed(0..self.index_size, 0, 0..1);
         // End the renderpass.
         drop(renderpass);
         // Submit the command in the queue to execute

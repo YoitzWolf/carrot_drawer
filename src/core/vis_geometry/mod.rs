@@ -1,5 +1,5 @@
 pub mod vertex;
-mod contour;
-mod triangulation;
+pub mod contour;
+pub mod triangulation;
 
 pub use vertex::*;

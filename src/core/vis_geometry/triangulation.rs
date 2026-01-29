@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::hash::Hash;
 use std::ops::{Deref, RemAssign};
 use glam::{Vec2, Vec3, Vec3Swizzles};
-use crate::core::vis_geometry::contour::PolygonList;
+// use crate::core::vis_geometry::contour::PolygonList;
 use crate::core::vis_geometry::Vertex;
 
 
@@ -202,6 +202,8 @@ impl PolygonSelector {
                     ).map(
                         |this| {
                             check_edge = points[*this] - points[cur];
+                            last_edge.z = 0.0;
+                            check_edge.z = 0.0;
                             check = last_edge * check_edge;
                             (check.length() / (last_edge.length() * check_edge.length()), check.z > 0.0, *this)
                         }
@@ -259,6 +261,8 @@ impl PolygonSelector {
                         .map(
                             |this| {
                                 check_edge    = points[*this] - points[cur];
+                                last_edge.z = 0.0;
+                                check_edge.z = 0.0;
                                 check = last_edge * check_edge;
                                 (check.length() / (last_edge.length() * check_edge.length()), check.z > 0.0, *this)
                             }
@@ -551,24 +555,54 @@ pub fn triangulate_2d(
                                 if
                                     (points[monotonic_pol_points[*k]].y.partial_cmp(&points[monotonic_pol_points[prev_k]].y)) !=
                                         (points[monotonic_pol_points[top]].y.partial_cmp(&points[monotonic_pol_points[prev_top]].y))
-                                    || (
-                                        (points[monotonic_pol_points[*k]].x.partial_cmp(&points[monotonic_pol_points[prev_k]].x)) !=
-                                            (points[monotonic_pol_points[top]].x.partial_cmp(&points[monotonic_pol_points[prev_top]].x))
-                                    )
+                                    // || (
+                                    //     // (points[monotonic_pol_points[*k]].y.partial_cmp(&points[monotonic_pol_points[prev_k]].y)) ==
+                                    //     //     (points[monotonic_pol_points[top]].y.partial_cmp(&points[monotonic_pol_points[prev_top]].y)) &&
+                                    //     (points[monotonic_pol_points[*k]].x.partial_cmp(&points[monotonic_pol_points[prev_k]].x)) !=
+                                    //         (points[monotonic_pol_points[top]].x.partial_cmp(&points[monotonic_pol_points[prev_top]].x))
+                                    // )
                                 {
                                     stack.push(top);
                                     // different chains
                                     let mut u = stack.len() - 1;
                                      while u != 0 {
+                                         let n0_idx = monotonic_pol_points[*k];
+                                         // println!(
+                                         //     "DIF k: {}; prev k: {}; top: {}; prev_top: {}; {:?} :: {:?}", *k, prev_k, top, prev_top, stack, sorted
+                                         // );
                                         pol_indices.push(
-                                            monotonic_pol_points[*k] as u32
+                                            n0_idx as u32
                                         );
-                                        pol_indices.push(
-                                            monotonic_pol_points[stack[u]] as u32
-                                        );
-                                        pol_indices.push(
-                                            monotonic_pol_points[stack[u-1]] as u32
-                                        );
+                                         let n1_idx = monotonic_pol_points[stack[u]];
+                                         // let n2_idx = monotonic_pol_points[stack[u-1]];
+                                         let n2_idx = monotonic_pol_points[stack[u - 1]];
+                                         if (
+                                             {
+                                                 (points[n1_idx].x - points[n0_idx].x) * (points[n1_idx].y + points[n0_idx].y) +
+                                                 (points[n2_idx].x - points[n1_idx].x) * (points[n2_idx].y + points[n1_idx].y) +
+                                                 (points[n0_idx].x - points[n2_idx].x) * (points[n0_idx].y + points[n2_idx].y)
+                                             } < 0.0
+                                         ) {
+                                             pol_indices.push(
+                                                 n1_idx as u32
+                                             );
+                                             pol_indices.push(
+                                                 n2_idx as u32
+                                             );
+                                         } else {
+                                             pol_indices.push(
+                                                 n2_idx as u32
+                                             );
+                                             pol_indices.push(
+                                                 n1_idx as u32
+                                             );
+                                         }
+                                        //pol_indices.push(
+                                        //    monotonic_pol_points[stack[u]] as u32
+                                        //);
+                                        //pol_indices.push(
+                                        //    monotonic_pol_points[stack[u-1]] as u32
+                                        //);
                                          u -= 1;
                                     }
                                     stack.clear();
@@ -600,15 +634,43 @@ pub fn triangulate_2d(
                                             }
                                         })
                                         {
+                                            let n0_idx = monotonic_pol_points[*k];
                                             pol_indices.push(
-                                                monotonic_pol_points[*k] as u32
+                                                n0_idx as u32
                                             );
-                                            pol_indices.push(
-                                                monotonic_pol_points[last_popped] as u32
-                                            );
-                                            pol_indices.push(
-                                                monotonic_pol_points[popped] as u32
-                                            );
+                                            // println!(
+                                            //     "SAME {} {:?}", n0_idx, stack
+                                            // );
+                                            let n1_idx = monotonic_pol_points[last_popped];
+                                            let n2_idx = monotonic_pol_points[popped];
+                                            if (
+                                                {
+                                                    (points[n1_idx].x - points[n0_idx].x) * (points[n1_idx].y + points[n0_idx].y) +
+                                                        (points[n2_idx].x - points[n1_idx].x) * (points[n2_idx].y + points[n1_idx].y) +
+                                                        (points[n0_idx].x - points[n2_idx].x) * (points[n0_idx].y + points[n2_idx].y)
+                                                } < 0.0
+                                            ) {
+                                                pol_indices.push(
+                                                    n1_idx as u32
+                                                );
+                                                pol_indices.push(
+                                                    n2_idx as u32
+                                                );
+                                            } else {
+                                                pol_indices.push(
+                                                    n2_idx as u32
+                                                );
+                                                pol_indices.push(
+                                                    n1_idx as u32
+                                                );
+                                            }
+                                            // pol_indices.push(
+                                            //     monotonic_pol_points[last_popped] as u32
+                                            // );
+                                            // pol_indices.push(
+                                            //     monotonic_pol_points[popped] as u32
+                                            // );
+
                                             last_popped = popped;
                                         } else {
                                             stack.push(popped);
@@ -629,18 +691,36 @@ pub fn triangulate_2d(
                         //println!("Final stack {:?}", stack);
                         for i in 1..stack.len() {
                             //println!("i: {}", i);
+                            let n0_idx = monotonic_pol_points[fr_diag];
                             pol_indices.push(
-                                monotonic_pol_points[fr_diag] as u32
+                                n0_idx as u32
                             );
-                            pol_indices.push(
-                                monotonic_pol_points[stack[i]] as u32
-                            );
-                            pol_indices.push(
-                                monotonic_pol_points[stack[i-1]] as u32
-                            );
-                            println!("last added: {} {} {}",
-                                    fr_diag, monotonic_pol_points[stack[i]], monotonic_pol_points[stack[i-1]]
-                            )
+                            let n1_idx = monotonic_pol_points[stack[i]];
+                            let n2_idx = monotonic_pol_points[stack[i-1]];
+                            if (
+                                {
+                                    (points[n1_idx].x - points[n0_idx].x) * (points[n1_idx].y + points[n0_idx].y) +
+                                        (points[n2_idx].x - points[n1_idx].x) * (points[n2_idx].y + points[n1_idx].y) +
+                                        (points[n0_idx].x - points[n2_idx].x) * (points[n0_idx].y + points[n2_idx].y)
+                                } < 0.0
+                            ) {
+                                pol_indices.push(
+                                    n1_idx as u32
+                                );
+                                pol_indices.push(
+                                    n2_idx as u32
+                                );
+                            } else {
+                                pol_indices.push(
+                                    n2_idx as u32
+                                );
+                                pol_indices.push(
+                                    n1_idx as u32
+                                );
+                            }
+                            // println!("last added: {} {} {}",
+                            //         fr_diag, monotonic_pol_points[stack[i]], monotonic_pol_points[stack[i-1]]
+                            // )
                         }
                     }
                     Err(e) => {
