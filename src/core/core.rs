@@ -1,6 +1,5 @@
 use std::sync::Arc;
-use wgpu::BindingType::Texture;
-use wgpu::{TextureDescriptor, TextureDimension, TextureFormat, TextureSampleType, TextureViewDimension};
+use wgpu::{TextureDescriptor, TextureDimension, TextureFormat};
 use winit::{
     window::Window,
     dpi::PhysicalSize
@@ -11,17 +10,7 @@ use wgpu::util::DeviceExt;
 use crate::core::camera::*;
 use crate::core::vis_geometry::vertex::*;
 
-// const VERTICES: &[Vertex<3>] = &[
-//     Vertex { position: [0.0, 0.5,   0.1], color: [1.0, 0.0, 0.0] },
-//     Vertex { position: [-0.5, -0.5, 0.5], color: [0.0, 1.0, 0.0] },
-//     Vertex { position: [0.5, -0.5,  0.5], color: [0.0, 0.0, 1.0] },
-//
-//     Vertex { position: [0.0, -0.5, 0.0], color: [0.0, 0.0, 1.0] },
-//     Vertex { position: [0.5, 0.5,  0.5], color:  [0.0, 1.0, 1.0] },
-//     Vertex { position: [-0.5, 0.5, 0.5], color: [1.0, 0.0, 1.0] },
-// ];
 
-// This will store the state of our game
 pub struct State {
     size: PhysicalSize<u32>,
     surface: wgpu::Surface<'static>,
@@ -41,7 +30,8 @@ pub struct State {
 }
 
 impl State {
-    pub async fn new(window: Arc<Window>, vertices: Arc<Vec<Vertex<3>>>, indexes: Arc<Vec<u32>>) -> anyhow::Result<Self> {
+
+    pub async fn new(window: Arc<Window>, vertices: &Vec<Vertex<3>>, indexes: &Vec<u32>) -> anyhow::Result<Self> {
         let size = window.inner_size();
         // The instance is a handle to our GPU
         // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
@@ -65,7 +55,7 @@ impl State {
                 memory_hints: Default::default(),
                 trace: wgpu::Trace::Off,
             }).await?;
-        println!("Device Features: {:?}", device.features());
+        // println!("Device Features: {:?}", device.features());
         let shader = device.create_shader_module(
             wgpu::include_wgsl!("shaders/test_shader.wgsl")
         );
@@ -73,14 +63,14 @@ impl State {
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Vertex Buffer"),
                 contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             }
         );
         let index_buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Index Buffer"),
                 contents: bytemuck::cast_slice(&indexes),
-                usage: wgpu::BufferUsages::INDEX,
+                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
             }
         );
         let mut camera_state = CameraState::new();
@@ -138,9 +128,9 @@ impl State {
                     compilation_options: wgpu::PipelineCompilationOptions::default(),
                 },
                 primitive: wgpu::PrimitiveState {
-                    topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                    topology: wgpu::PrimitiveTopology::TriangleList,
                     strip_index_format: None,
-                    front_face: wgpu::FrontFace::Ccw, // 2.
+                    front_face: wgpu::FrontFace::Ccw,
                     cull_mode: Some(wgpu::Face::Back),
                     // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                     polygon_mode: wgpu::PolygonMode::Fill,
@@ -152,8 +142,8 @@ impl State {
                 depth_stencil: Some(wgpu::DepthStencilState {
                     format: wgpu::TextureFormat::Depth32Float,
                     depth_write_enabled: true,
-                    depth_compare: wgpu::CompareFunction::Less, // 1.
-                    stencil: wgpu::StencilState::default(), // 2.
+                    depth_compare: wgpu::CompareFunction::Less,
+                    stencil: wgpu::StencilState::default(),
                     bias: wgpu::DepthBiasState::default(),
                 }),
                 multisample: wgpu::MultisampleState {
@@ -192,7 +182,6 @@ impl State {
             }
         );
         let depth_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        // -------------------------------------------------------------
         let state = Self {
             size,
             surface,
@@ -208,7 +197,6 @@ impl State {
             depth_texture,
             depth_view,
             window,
-            //vertices,
             index_size: indexes.len() as u32,
         };
         state.configure_surface();
@@ -226,6 +214,26 @@ impl State {
             present_mode: wgpu::PresentMode::AutoVsync,
         };
         self.surface.configure(&self.device, &surface_config);
+    }
+
+    pub fn update_render_buffer(&mut self, vertices: &Vec<Vertex<3>>, indexes: &Vec<u32>) {
+        // self.vertex_buffer = self.device.create_buffer_init(
+        //     &wgpu::util::BufferInitDescriptor {
+        //         label: Some("Vertex Buffer"),
+        //         contents: bytemuck::cast_slice(&vertices),
+        //         usage: wgpu::BufferUsages::VERTEX,
+        //     }
+        // );
+        self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+        self.queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&indexes));
+        // self.index_buffer = self.device.create_buffer_init(
+        //     &wgpu::util::BufferInitDescriptor {
+        //         label: Some("Index Buffer"),
+        //         contents: bytemuck::cast_slice(&indexes),
+        //         usage: wgpu::BufferUsages::INDEX,
+        //     }
+        // );
+        self.index_size = indexes.len() as u32;
     }
 
     fn update_state(&mut self) {
@@ -303,7 +311,7 @@ impl State {
             multiview_mask: None,
         });
         // drawing commands
-        println!("indexes: {:?}", 0..self.index_size);
+        //println!("indexes: {:?}", 0..self.index_size);
         renderpass.set_pipeline(&self.render_pipeline);
         renderpass.set_bind_group(0, &self.camera_bind_group, &[]);
         renderpass.set_vertex_buffer(0, self.vertex_buffer.slice(..));

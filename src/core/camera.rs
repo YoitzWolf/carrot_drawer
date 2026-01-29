@@ -15,18 +15,19 @@ impl CameraState {
     pub fn new() -> Self {
         Self {
             window_scaling: [1.0, 1.0],
-            zoom: 1.0,
+            zoom: 100.0,
             __p: 0.0,
         }
     }
 
     pub fn set_scaling(&mut self, size: &PhysicalSize<u32>) {
-        self.window_scaling = {
-            if (size.height > size.width) {
-                [1.0, (size.width as f32 / size.height as f32)]
-            } else {
-                [(size.height as f32 / size.width as f32), 1.0]
-            }
-        }
+        self.window_scaling = [(2.0 / size.width as f32), (2.0 / size.height as f32)];
+        // self.window_scaling = {
+        //     if (size.height > size.width) {
+        //         [1.0, (size.width as f32 / size.height as f32)]
+        //     } else {
+        //         [(size.height as f32 / size.width as f32), 1.0]
+        //     }
+        // }
     }
 }
