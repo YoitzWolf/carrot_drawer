@@ -10,6 +10,10 @@ use crate::core::camera::*;
 use crate::core::vis_geometry::vertex::*;
 
 
+pub trait BoxClone {
+    fn box_clone(&self) -> Box<Self>;
+}
+
 pub struct State {
     size: PhysicalSize<u32>,
     surface: wgpu::Surface<'static>,
@@ -215,23 +219,26 @@ impl State {
         self.surface.configure(&self.device, &surface_config);
     }
 
+    const ZOOM_SPEED: f32 = 0.5;
+    pub fn change_special_zoom(&mut self, delta: f32) {
+
+        let special_zoom = self.camera_state.get_special_zoom() + delta*Self::ZOOM_SPEED;
+        self.camera_state.set_special_zoom(special_zoom);
+        self.update_state();
+    }
+
+    pub fn set_special_zoom(&mut self, zoom: f32) {
+        self.camera_state.set_special_zoom(zoom);
+        self.update_state();
+    }
+
+    pub fn get_special_zoom(&self) -> f32 {
+        self.camera_state.get_special_zoom()
+    }
+
     pub fn update_render_buffer(&mut self, vertices: &Vec<Vertex<3>>, indexes: &Vec<u32>) {
-        // self.vertex_buffer = self.device.create_buffer_init(
-        //     &wgpu::util::BufferInitDescriptor {
-        //         label: Some("Vertex Buffer"),
-        //         contents: bytemuck::cast_slice(&vertices),
-        //         usage: wgpu::BufferUsages::VERTEX,
-        //     }
-        // );
         self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
         self.queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&indexes));
-        // self.index_buffer = self.device.create_buffer_init(
-        //     &wgpu::util::BufferInitDescriptor {
-        //         label: Some("Index Buffer"),
-        //         contents: bytemuck::cast_slice(&indexes),
-        //         usage: wgpu::BufferUsages::INDEX,
-        //     }
-        // );
         self.index_size = indexes.len() as u32;
     }
 
@@ -241,8 +248,9 @@ impl State {
     }
 
     pub fn move_camera(&mut self, dx: f32, dy: f32) {
-        self.camera_state.pos_x += dx;
-        self.camera_state.pos_y += dy;
+        let zoom = 1.0 / self.camera_state.get_zoom();
+        self.camera_state.pos_x += dx * zoom;
+        self.camera_state.pos_y += dy * zoom;
         self.update_state();
     }
 

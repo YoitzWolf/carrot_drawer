@@ -15,3 +15,17 @@
     - [ ] Drawing styled surface;
   - [ ] Structural:
     - [ ] Layered structure;
+
+
+
+### about shape render
+
+Geometric Shape -> Border Path;
+
+if fill -> call triangulate( Border path )
+
+if border -> call triangulate ( call shaper(&Border path, border style, viewport context) -> Border path )
+
+### about 2d world helper structures
+
+#### Layers

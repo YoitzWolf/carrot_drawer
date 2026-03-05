@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use glam::Vec3;
 
 // pub enum CrossSectionSolver {
@@ -6,10 +7,16 @@ use glam::Vec3;
 //     Xor,
 // }
 
-pub trait Contour {
+
+
+pub trait Contour where Self: Debug {
     fn to_vertex_list(&self) -> Vec<Vec<Vec3>>;
+
+    fn box_clone(&self) -> Box<dyn Contour>;
+
 }
 
+#[derive(Debug, Clone)]
 pub enum BasicContour {
     /// square 1*1
     Square,
@@ -67,5 +74,8 @@ impl Contour for BasicContour {
             //     todo!()
             // },
         }
+    }
+    fn box_clone(&self) -> Box<(dyn Contour + 'static)> {
+        Box::new(self.clone())
     }
 }

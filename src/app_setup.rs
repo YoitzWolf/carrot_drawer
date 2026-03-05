@@ -1,8 +1,9 @@
 use std::sync::Arc;
+use tokio::runtime::Handle;
 use winit::application::ApplicationHandler;
 use winit::dpi::PhysicalSize;
-use winit::event::{KeyEvent, WindowEvent};
-use winit::event_loop::ActiveEventLoop;
+use winit::event::{DeviceId, KeyEvent, MouseScrollDelta, TouchPhase, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow};
 use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::Window;
 use crate::core::*;
@@ -24,12 +25,12 @@ impl App {
     }
 }
 
+pub struct StateUpdate {}
 
-impl ApplicationHandler<State> for App {
+impl ApplicationHandler<StateUpdate> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let mut window_attributes = Window::default_attributes();
         let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-
         let draw_vertices = BasicContour::NPolygon(59).to_vertex_list().first().unwrap().clone();
         let draw_indexes = triangulate_2d(&draw_vertices).unwrap(); //vec![
         let draw_vertices = draw_vertices.iter().map(
@@ -42,24 +43,26 @@ impl ApplicationHandler<State> for App {
         ).collect();
         // If we are not on web we can use pollster to
         // await the
-        let runtime = tokio::runtime::Builder::new_multi_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let s = runtime.block_on(
-            State::new(
-                window,
-                &draw_vertices,
-                &draw_indexes,
-            )
-        );
+        // let runtime = tokio::runtime::Builder::new_multi_thread()
+        //     .enable_all()
+        //     .build()
+        //     .unwrap();
+        let s = tokio::task::block_in_place(move || {
+            Handle::current().block_on(async {
+                State::new(
+                    window,
+                    &draw_vertices,
+                    &draw_indexes,
+                ).await
+            })
+        });
         self.state = Some(
-            s.unwrap() // State::new(window)
+            s.unwrap()
         );
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: State) {
-        self.state = Some(event);
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: StateUpdate) {
+        // self.state = Some(event);
     }
 
     fn window_event(
@@ -78,8 +81,18 @@ impl ApplicationHandler<State> for App {
                 size) => render_state.resize(PhysicalSize::new(size.width, size.height)
             ),
             WindowEvent::RedrawRequested => {
+                // println!("REDRAW");
                 render_state.render();
-            }
+            },
+            WindowEvent::MouseWheel {
+                device_id: _,
+                delta: MouseScrollDelta::LineDelta(dx, dy),
+                phase: _
+            } => {
+                render_state.change_special_zoom(dy);
+                println!("Zoom: dy {} and special {}", dy, render_state.get_special_zoom());
+                render_state.render();
+            },
             WindowEvent::KeyboardInput {
                 event: KeyEvent {
                     physical_key: PhysicalKey::Code(code),
@@ -88,25 +101,25 @@ impl ApplicationHandler<State> for App {
                 },
                 ..
             } => match (code, state.is_pressed()) {
-                (KeyCode::Escape, true) => event_loop.exit(),
-                (KeyCode::ArrowLeft, _) => {
+                (KeyCode::Escape, false) => event_loop.exit(),
+                (KeyCode::ArrowLeft, true) => {
                     println!("ArrowLeft");
-                    render_state.move_camera(-0.1, 0.0);
+                    render_state.move_camera(-0.2, 0.0);
                     render_state.render();
                 },
-                (KeyCode::ArrowRight, _) => {
+                (KeyCode::ArrowRight, true) => {
                     println!("ArrowRight");
-                    render_state.move_camera(0.1, 0.0);
+                    render_state.move_camera(0.2, 0.0);
                     render_state.render();
                 },
-                (KeyCode::ArrowUp, _) => {
+                (KeyCode::ArrowUp, true) => {
                     println!("ArrowLeft");
-                    render_state.move_camera(0.0, 0.1);
+                    render_state.move_camera(0.0, 0.2);
                     render_state.render();
                 },
-                (KeyCode::ArrowDown, _) => {
+                (KeyCode::ArrowDown, true) => {
                     println!("ArrowRight");
-                    render_state.move_camera(0.0, -0.1);
+                    render_state.move_camera(0.0, -0.2);
                     render_state.render();
                 },
                 _ => {

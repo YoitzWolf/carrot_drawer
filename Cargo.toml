@@ -15,3 +15,5 @@ glam = "0.30.10"
 
 anyhow = "*"
 log = "*"
+
+# pamo-rs = {path = "./../pamo-rs"}

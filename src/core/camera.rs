@@ -1,5 +1,7 @@
 use winit::dpi::PhysicalSize;
 
+
+
 #[repr(C)]
 // This is so we can store this in a buffer
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -18,18 +20,24 @@ impl CameraState {
             pos_y: 0.0,
             window_scaling: [1.0, 1.0],
             zoom: 100.0,
-            __p: 0.0,
+            __p: 100.0,
         }
     }
 
     pub fn set_scaling(&mut self, size: &PhysicalSize<u32>) {
         self.window_scaling = [2.0 / size.width as f32, 2.0 / size.height as f32];
-        // self.window_scaling = {
-        //     if (size.height > size.width) {
-        //         [1.0, (size.width as f32 / size.height as f32)]
-        //     } else {
-        //         [(size.height as f32 / size.width as f32), 1.0]
-        //     }
-        // }
+    }
+
+    pub fn set_special_zoom(&mut self, zoom: f32) {
+        self.__p = zoom;
+        self.zoom = if self.__p > 0.0 { 1.0 + self.__p } else { std::f32::consts::E.powf(zoom) };
+    }
+
+    pub fn get_zoom(&self) -> f32 {
+        self.zoom
+    }
+
+    pub fn get_special_zoom(&self) -> f32 {
+        self.__p
     }
 }
