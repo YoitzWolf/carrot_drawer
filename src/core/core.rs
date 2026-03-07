@@ -237,8 +237,24 @@ impl State {
     }
 
     pub fn update_render_buffer(&mut self, vertices: &Vec<Vertex<3>>, indexes: &Vec<u32>) {
-        self.queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
-        self.queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&indexes));
+        //let vertex_bytes = bytemuck::cast_slice(&vertices);
+        //let index_bytes = bytemuck::cast_slice(&indexes);
+        self.vertex_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Vertex Buffer"),
+                contents: bytemuck::cast_slice(&vertices),
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+        self.index_buffer = self.device.create_buffer_init(
+            &wgpu::util::BufferInitDescriptor {
+                label: Some("Index Buffer"),
+                contents: bytemuck::cast_slice(&indexes),
+                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+            }
+        );
+        // self.queue.write_buffer(&self.vertex_buffer, 0, vertex_bytes);
+        // self.queue.write_buffer(&self.index_buffer, 0, index_bytes);
         self.index_size = indexes.len() as u32;
     }
 

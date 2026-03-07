@@ -55,12 +55,16 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
                             ],
                             color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
                         },
-                        // Vertex{
-                        //     position: [0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI/2.0), 0.0],
-                        //     color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
-                        // },
+                        Vertex{
+                            position: [0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI/2.0), 0.0],
+                            color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
+                        },
+                        Vertex{
+                            position: [0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI/2.0), 0.0],
+                            color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
+                        },
                     ],
-                    indexes: vec![0, 2, 1],
+                    indexes: vec![0, 2, 1,],
                 }
             ) {
                 Ok(_) => {}
