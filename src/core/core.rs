@@ -28,7 +28,7 @@ pub struct State {
     camera_bind_group: wgpu::BindGroup,
     depth_texture: wgpu::Texture,
     depth_view: wgpu::TextureView,
-    window: Arc<Window>,
+    pub window: Arc<Window>,
     index_size: u32,
 }
 

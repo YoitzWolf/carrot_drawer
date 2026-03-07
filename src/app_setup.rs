@@ -25,28 +25,41 @@ impl App {
     }
 }
 
-pub struct StateUpdate {}
+#[derive(Clone, Debug, Default)]
+pub enum StateUpdate {
+    #[default]
+    RawRedraw,
+    ResetVertices {
+        vertices: Vec<Vertex<3>>,
+        indexes: Vec<u32>
+    }
+}
 
 impl ApplicationHandler<StateUpdate> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
         let mut window_attributes = Window::default_attributes();
         let window = Arc::new(event_loop.create_window(window_attributes).unwrap());
-        let draw_vertices = BasicContour::NPolygon(59).to_vertex_list().first().unwrap().clone();
-        let draw_indexes = triangulate_2d(&draw_vertices).unwrap(); //vec![
-        let draw_vertices = draw_vertices.iter().map(
-            |v| {
-                Vertex {
-                    position: [v.x, v.y, v.z],
-                    color: [v.x, v.y, 1.0],
-                }
-            }
-        ).collect();
-        // If we are not on web we can use pollster to
-        // await the
-        // let runtime = tokio::runtime::Builder::new_multi_thread()
-        //     .enable_all()
-        //     .build()
-        //     .unwrap();
+        let draw_indexes = vec![
+            0, 2, 1, 0, 1, 3
+        ];
+        let draw_vertices = vec![
+            Vertex {
+                position: [0., 0., 0.],
+                color: [1., 1., 1.],
+            },
+            Vertex {
+                position: [1., 1., 0.],
+                color: [1., 1., 1.],
+            },
+            Vertex {
+                position: [1.0, 0., 0.],
+                color: [1., 1., 1.],
+            },
+            Vertex {
+                position: [0., 1., 0.],
+                color: [1., 1., 1.],
+            },
+        ];
         let s = tokio::task::block_in_place(move || {
             Handle::current().block_on(async {
                 State::new(
@@ -61,8 +74,21 @@ impl ApplicationHandler<StateUpdate> for App {
         );
     }
 
-    fn user_event(&mut self, _event_loop: &ActiveEventLoop, mut event: StateUpdate) {
+    fn user_event(&mut self, event_loop: &ActiveEventLoop, mut event: StateUpdate) {
         // self.state = Some(event);
+        //println!("Accessed user event: {:?}", event);
+        if let Some(s) = &mut self.state {
+            match event {
+                StateUpdate::RawRedraw => {
+                    s.render();
+                }
+                StateUpdate::ResetVertices { indexes, vertices } => {
+                    s.update_render_buffer(&vertices, &indexes);
+                }
+            }
+        } else {
+            panic!("State not initialized");
+        }
     }
 
     fn window_event(
@@ -81,8 +107,9 @@ impl ApplicationHandler<StateUpdate> for App {
                 size) => render_state.resize(PhysicalSize::new(size.width, size.height)
             ),
             WindowEvent::RedrawRequested => {
-                // println!("REDRAW");
+                // println!("WINDOW REDRAW");
                 render_state.render();
+                render_state.window.request_redraw();
             },
             WindowEvent::MouseWheel {
                 device_id: _,
