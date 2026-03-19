@@ -2,19 +2,24 @@ use std::fmt::Debug;
 use glam::{Affine3A, Vec3};
 use crate::core::vis_geometry::{contour, Vertex};
 use crate::core::vis_geometry::contour::Contour;
+use crate::core::vis_geometry::gentraits::{Colorable, Rotated};
 use crate::core::vis_geometry::triangulation::triangulate_2d;
 
-pub trait RenderObject<const N: usize> where Self: Debug + Send + Sync {
+pub trait RenderObject<const N: usize> where Self: Debug + Send + Sync + Rotated {
     fn render(&self) -> anyhow::Result<(Vec<Vertex<N>>, Vec<u32>)>;
-
-    fn box_clone(&self) -> Box<dyn RenderObject<N>>;
+    // fn box_clone(&self) -> Box<dyn RenderObject<N>>;
 }
-
 
 #[derive(Debug)]
 pub struct ContourRender {
     pub contour: Box<dyn Contour>,
     pub colors: Vec<Vec3>
+}
+
+impl Colorable for ContourRender {
+    fn set_colors(&mut self, colors: Vec<Vec3>) {
+        self.colors = colors;
+    }
 }
 
 impl Clone for ContourRender {
@@ -23,6 +28,16 @@ impl Clone for ContourRender {
             contour: self.contour.box_clone(),
             colors: self.colors.clone(),
         }
+    }
+}
+
+impl Rotated for ContourRender {
+    fn rotate(&mut self, angle: f32) {
+        self.contour.rotate(angle);
+    }
+
+    fn set_rotation(&mut self, angle: f32) {
+        self.contour.set_rotation(angle);
     }
 }
 
@@ -52,7 +67,7 @@ impl RenderObject<3> for ContourRender {
         )
     }
 
-    fn box_clone(&self) -> Box<dyn RenderObject<3>> {
-        Box::new(self.clone()) 
-    }
+    //fn box_clone(&self) -> Box<dyn RenderObject<3>> {
+    //    Box::new(self.clone())
+    //}
 }

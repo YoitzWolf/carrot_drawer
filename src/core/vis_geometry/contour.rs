@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 use glam::{Mat3A, Vec3};
-
+use crate::core::vis_geometry::gentraits::Rotated;
 // pub enum CrossSectionSolver {
 //     Sum,
 //     Sub,
@@ -9,10 +9,9 @@ use glam::{Mat3A, Vec3};
 
 
 
-pub trait Contour where Self: Debug + Send + Sync {
+pub trait Contour where Self: Debug + Send + Sync + Rotated {
     fn to_vertex_list(&self) -> Vec<Vec<Vec3>>;
     fn box_clone(&self) -> Box<dyn Contour>;
-    fn rotate(&mut self, angle: f32);
 
 }
 
@@ -38,6 +37,16 @@ pub struct BasicContour {
 impl BasicContour {
     pub fn new(shape: BasicContourShape, rotation: f32) -> Self {
         Self{shape, rotation}
+    }
+}
+
+impl Rotated for BasicContour {
+    fn set_rotation(&mut self, angle: f32) {
+        self.rotation = angle;
+    }
+
+    fn rotate(&mut self, angle: f32) {
+        self.rotation += angle;
     }
 }
 
@@ -95,9 +104,5 @@ impl Contour for BasicContour {
     }
     fn box_clone(&self) -> Box<(dyn Contour + 'static)> {
         Box::new(self.clone())
-    }
-
-    fn rotate(&mut self, angle: f32) {
-        self.rotation = angle;
     }
 }

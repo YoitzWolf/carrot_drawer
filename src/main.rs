@@ -1,6 +1,7 @@
 use std::f32::consts::PI;
 use std::time::Duration;
 use glam::Vec3;
+use log::info;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopClosed, EventLoopProxy};
 use tokio;
 use tokio::io::AsyncWriteExt;
@@ -25,12 +26,22 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
             contour: Box::new(BasicContour::new(BasicContourShape::NPolygon(3), 0.0)),
             colors: vec![Vec3::new(1.0, 0.0, 0.0); 3],
         }));
-        let K = 512;
+        let K = 256;
+        tokio::time::sleep(Duration::from_millis(1)).await;
         loop {
-            // println!("r: {}", r);
             tokio::time::sleep(Duration::from_millis(1)).await;
-            // println!("Rendering indexes: {:?}", indexes);
-            let (i, mut x) = layer.pop_first().unwrap();
+            {
+                let v = layer.get_mut(0).unwrap();
+                v.set_rotation(r as f32 / K as f32 * 2.0 * PI);
+                v.set_colors(
+                    vec![
+                        Vec3::new(f32::sin(r as f32 / K as f32 * PI * 2.0)/2.0 + 0.5, 0.0, 0.0),
+                        Vec3::new(0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + 2.0*PI/3.0)/2.0 + 0.5, 0.0),
+                        Vec3::new(0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + 4.0*PI/3.0)/2.0 + 0.5),
+                    ]
+                )
+            }
+            /*let (i, mut x) = layer.pop_first().unwrap();
             layer.push(i, Box::new(
                 ContourRender{
                     contour: Box::new(
@@ -42,47 +53,12 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
                         Vec3::new(0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + 4.0*PI/3.0)/2.0 + 0.5),
                     ],
                 }
-            ));
+            ));*/
             let (vertices, indexes) = layer.render().unwrap();
             match proxy.send_event(
                 StateUpdate::ResetVertices {
                         vertices,
                         indexes,
-                    // vertices: vec![
-                    //     Vertex{
-                    //         position: [
-                    //             f32::sin(r as f32 / K as f32 * PI * 2.0 ),
-                    //             f32::cos(r as f32 / K as f32 * PI * 2.0 ),
-                    //             1.0
-                    //         ],
-                    //         color: [f32::sin(r as f32 / K as f32 * PI * 2.0)/2.0 + 0.5, 0.0, 0.0],
-                    //     },
-                    //     Vertex{
-                    //         position: [
-                    //             f32::sin(r as f32 / K as f32 * PI * 2.0 + 2.0*PI/3.0),
-                    //             f32::cos(r as f32 / K as f32 * PI * 2.0 + 2.0*PI/3.0),
-                    //             0.0
-                    //         ],
-                    //         color: [0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI/2.0)/2.0 + 0.5, 0.0],
-                    //     },
-                    //     Vertex{
-                    //         position: [
-                    //             f32::sin(r as f32 / K as f32 * PI * 2.0 + 4.0*PI/3.0),
-                    //             f32::cos(r as f32 / K as f32 * PI * 2.0 + 4.0*PI/3.0),
-                    //             0.0
-                    //         ],
-                    //         color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
-                    //     },
-                    //     Vertex{
-                    //         position: [0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI/2.0), 0.0],
-                    //         color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
-                    //     },
-                    //     Vertex{
-                    //         position: [0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI/2.0), 0.0],
-                    //         color: [0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + PI)/2.0 + 0.5],
-                    //     },
-                    // ],
-                    // indexes: vec![0, 2, 1,],
                 }
             ) {
                 Ok(_) => {}
@@ -90,11 +66,6 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
                     println!("Failed to update render buffer");
                     break; }
             };
-
-            // match proxy.send_event(StateUpdate::RawRedraw) {
-            //     Ok(_) => {}
-            //     Err(_) => { break; }
-            // }
             r = (r + 1) % K;
         }
     });
@@ -102,12 +73,16 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
 
 pub async fn run() -> anyhow::Result<()> {
     env_logger::init();
+    info!("Starting...");
     let mut event_loop = EventLoop::with_user_event().build()?;
     event_loop.set_control_flow(ControlFlow::Poll);
     let mut proxy = event_loop.create_proxy();
     let mut app = App::new();
+    info!("Initialisation finished, starting app...");
     runner(proxy);
+    info!("Loop execution starts...");
     event_loop.run_app(&mut app)?;
+    info!("Exiting...");
     Ok(())
 }
 
