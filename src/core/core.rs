@@ -10,10 +10,6 @@ use crate::core::camera::*;
 use crate::core::vis_geometry::vertex::*;
 
 
-pub trait BoxClone {
-    fn box_clone(&self) -> Box<Self>;
-}
-
 pub struct State {
     size: PhysicalSize<u32>,
     surface: wgpu::Surface<'static>,
