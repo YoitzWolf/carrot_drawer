@@ -1,6 +1,6 @@
 use std::fmt::Debug;
-use glam::{Mat3A, Vec3};
-use crate::core::vis_geometry::gentraits::Rotated;
+use glam::{Affine2, Mat3, Mat3A, Vec3};
+use crate::core::vis_geometry::gentraits::AffineTransformable;
 // pub enum CrossSectionSolver {
 //     Sum,
 //     Sub,
@@ -9,7 +9,8 @@ use crate::core::vis_geometry::gentraits::Rotated;
 
 
 
-pub trait Contour where Self: Debug + Send + Sync + Rotated {
+pub trait Contour where Self: Debug + Send + Sync + AffineTransformable
+{
     fn to_vertex_list(&self) -> Vec<Vec<Vec3>>;
     fn box_clone(&self) -> Box<dyn Contour>;
 
@@ -29,31 +30,72 @@ pub enum BasicContourShape {
 }
 
 #[derive(Debug, Clone)]
-pub struct BasicContour {
-    shape: BasicContourShape,
-    rotation: f32
+pub struct NaiveContour {
+    pub shape: Vec<Vec<Vec3>>,
+    pub matrix: Mat3A,
 }
 
-impl BasicContour {
-    pub fn new(shape: BasicContourShape, rotation: f32) -> Self {
-        Self{shape, rotation}
+impl NaiveContour {
+    pub fn new(shape: Vec<Vec<Vec3>>, matrix: Mat3A) -> Self {
+        Self { shape, matrix}
     }
 }
 
-impl Rotated for BasicContour {
-    fn set_rotation(&mut self, angle: f32) {
-        self.rotation = angle;
+impl AffineTransformable for NaiveContour {
+    fn set_transform(&mut self, matrix: Mat3A) {
+        todo!()
+    }
+
+    fn apply_transform(&mut self, matrix: &Mat3A) {
+        self.matrix = matrix * &self.matrix;
     }
 
     fn rotate(&mut self, angle: f32) {
-        self.rotation += angle;
+        self.apply_transform(&Mat3A::from_angle(angle));
+    }
+}
+
+impl Contour for NaiveContour {
+    fn to_vertex_list(&self) -> Vec<Vec<Vec3>> {
+        self.shape.iter().map(|x| x.iter().map(|x| {self.matrix * x}).collect()).collect()
+    }
+
+    fn box_clone(&self) -> Box<dyn Contour> {
+        Box::new(self.clone())
+    }
+}
+
+
+#[derive(Debug, Clone)]
+pub struct BasicContour {
+    shape: BasicContourShape,
+    matrix: Mat3A,
+}
+
+impl BasicContour {
+    pub fn new(shape: BasicContourShape, matrix: Mat3A) -> Self {
+        Self{shape, matrix}
+    }
+}
+
+impl AffineTransformable for BasicContour {
+    fn set_transform(&mut self, matrix: Mat3A) {
+        self.matrix = matrix;
+    }
+
+    fn apply_transform(&mut self, matrix: &Mat3A) {
+        self.matrix = matrix * &self.matrix;
+    }
+
+    fn rotate(&mut self, angle: f32) {
+        self.apply_transform(&Mat3A::from_angle(angle));
     }
 }
 
 impl Contour for BasicContour {
 
     fn to_vertex_list(&self) -> Vec<Vec<Vec3>> {
-        let m = Mat3A::from_angle(self.rotation);
+        let m = &self.matrix;
         match self.shape {
             BasicContourShape::Square => {
                 vec![

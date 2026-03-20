@@ -1,11 +1,12 @@
 use std::fmt::Debug;
-use glam::{Affine3A, Vec3};
+use glam::{Affine2, Affine3A, Mat3A, Vec3};
 use crate::core::vis_geometry::{contour, Vertex};
 use crate::core::vis_geometry::contour::Contour;
-use crate::core::vis_geometry::gentraits::{Colorable, Rotated};
+use crate::core::vis_geometry::gentraits::{Colorable, AffineTransformable};
 use crate::core::vis_geometry::triangulation::triangulate_2d;
 
-pub trait RenderObject<const N: usize> where Self: Debug + Send + Sync + Rotated {
+pub trait RenderObject<const N: usize> where Self: Debug + Send + Sync + AffineTransformable
+{
     fn render(&self) -> anyhow::Result<(Vec<Vertex<N>>, Vec<u32>)>;
     // fn box_clone(&self) -> Box<dyn RenderObject<N>>;
 }
@@ -31,13 +32,17 @@ impl Clone for ContourRender {
     }
 }
 
-impl Rotated for ContourRender {
+impl AffineTransformable for ContourRender {
     fn rotate(&mut self, angle: f32) {
         self.contour.rotate(angle);
     }
 
-    fn set_rotation(&mut self, angle: f32) {
-        self.contour.set_rotation(angle);
+    fn set_transform(&mut self, matrix: Mat3A) {
+        self.contour.set_transform(matrix);
+    }
+
+    fn apply_transform(&mut self, matrix: &Mat3A) {
+        self.contour.apply_transform(matrix);
     }
 }
 

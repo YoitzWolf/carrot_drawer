@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, HashMap};
-use crate::core::vis_geometry::gentraits::{Colorable};
+use glam::{Affine2, Mat3A};
+use crate::core::vis_geometry::gentraits::{AffineTransformable, Colorable};
 use crate::core::vis_geometry::render_object::RenderObject;
 use crate::core::vis_geometry::Vertex;
 
@@ -80,8 +81,13 @@ impl Layer {
     }
 }
 
-impl crate::core::vis_geometry::gentraits::Rotated for Layer {
-    fn set_rotation(&mut self, angle: f32) {
+impl AffineTransformable for Layer {
+
+    fn set_transform(&mut self, matrix: Mat3A) {
+        unimplemented!()
+    }
+
+    fn apply_transform(&mut self, matrix: &Mat3A) {
         unimplemented!()
     }
 

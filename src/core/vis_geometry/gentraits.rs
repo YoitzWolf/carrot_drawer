@@ -1,12 +1,15 @@
-use glam::Vec3;
+use glam::{Affine2, Mat3A, Vec3};
 
 
 pub trait BoxClone {
     fn box_clone<T>(&self) -> Box<T>;
 }
 
-pub trait Rotated {
-    fn set_rotation(&mut self, angle: f32);
+pub trait AffineTransformable {
+    fn set_transform(&mut self, matrix: Mat3A);
+
+    fn apply_transform(&mut self, matrix: &Mat3A);
+
     fn rotate(&mut self, angle: f32);
 }
 
