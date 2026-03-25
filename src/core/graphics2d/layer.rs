@@ -1,5 +1,5 @@
 use std::collections::{BTreeMap, HashMap};
-use glam::{Affine2, Mat3A};
+use glam::{Affine2, Mat3A, Mat4};
 use crate::core::vis_geometry::gentraits::{AffineTransformable, Colorable};
 use crate::core::vis_geometry::render_object::RenderObject;
 use crate::core::vis_geometry::Vertex;
@@ -19,7 +19,7 @@ impl<'a, T: RenderObject<3> + Colorable + Clone + 'static> InLayerRenderObject f
 pub struct Layer {
     title: Option<String>,
     modified: bool,
-    queue: BTreeMap<i64, Box<dyn InLayerRenderObject>>, // TODO : draw query with object IDS
+    queue: BTreeMap<i64, Box<dyn InLayerRenderObject>>,
 }
 
 
@@ -58,7 +58,7 @@ impl Layer {
 
     pub fn get_queue(&self) -> &BTreeMap<i64, Box<dyn InLayerRenderObject >> { &self.queue }
     
-    // pub fn get_queue_mut(&mut self) -> &mut BTreeMap<i32, Box<dyn Contour>> { &mut self.queue }
+    pub fn get_queue_mut(&mut self) -> &mut BTreeMap<i64, Box<dyn InLayerRenderObject>> { &mut self.queue }
 
     pub fn push(&mut self, key: i64, contour: Box<dyn InLayerRenderObject>) {
         self.modified = true;
@@ -83,11 +83,11 @@ impl Layer {
 
 impl AffineTransformable for Layer {
 
-    fn set_transform(&mut self, matrix: Mat3A) {
+    fn set_transform(&mut self, matrix: Mat4) {
         unimplemented!()
     }
 
-    fn apply_transform(&mut self, matrix: &Mat3A) {
+    fn apply_transform(&mut self, matrix: &Mat4) {
         unimplemented!()
     }
 

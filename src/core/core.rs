@@ -5,7 +5,7 @@ use winit::{
 };
 
 use wgpu::util::DeviceExt;
-
+use wgpu::wgt::CommandEncoderDescriptor;
 use crate::core::camera::*;
 use crate::core::vis_geometry::vertex::*;
 
@@ -146,7 +146,7 @@ impl State {
                     bias: wgpu::DepthBiasState::default(),
                 }),
                 multisample: wgpu::MultisampleState {
-                    count: 1,
+                    count: 1, //4,
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
@@ -235,22 +235,32 @@ impl State {
     pub fn update_render_buffer(&mut self, vertices: &Vec<Vertex<3>>, indexes: &Vec<u32>) {
         //let vertex_bytes = bytemuck::cast_slice(&vertices);
         //let index_bytes = bytemuck::cast_slice(&indexes);
-        self.vertex_buffer = self.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Vertex Buffer"),
-                contents: bytemuck::cast_slice(&vertices),
-                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
-            }
-        );
-        self.index_buffer = self.device.create_buffer_init(
-            &wgpu::util::BufferInitDescriptor {
-                label: Some("Index Buffer"),
-                contents: bytemuck::cast_slice(&indexes),
-                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
-            }
-        );
-        // self.queue.write_buffer(&self.vertex_buffer, 0, vertex_bytes);
-        // self.queue.write_buffer(&self.index_buffer, 0, index_bytes);
+        let v_size = vertices.len() * size_of::<Vertex<3>>();
+        let vertex_bytes = bytemuck::cast_slice(&vertices);
+        let i_size = indexes.len() * size_of::<u32>();
+        let index_bytes = bytemuck::cast_slice(&indexes);
+        if v_size > self.vertex_buffer.size() as usize {
+            self.vertex_buffer = self.device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: vertex_bytes,
+                    usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                }
+            );
+        } else {
+            self.queue.write_buffer(&self.vertex_buffer, 0, vertex_bytes);
+        }
+        if i_size > self.index_buffer.size() as usize{
+            self.index_buffer = self.device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Index Buffer"),
+                    contents: index_bytes,
+                    usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+                }
+            );
+        } else {
+            self.queue.write_buffer(&self.index_buffer, 0, index_bytes);
+        }
         self.index_size = indexes.len() as u32;
     }
 
@@ -310,7 +320,7 @@ impl State {
                 ..Default::default()
             });
         // Renders a screen
-        let mut encoder = self.device.create_command_encoder(&Default::default());
+        let mut encoder = self.device.create_command_encoder(&CommandEncoderDescriptor::default());
         // Create the renderpass which will clear the screen.
         let mut renderpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,

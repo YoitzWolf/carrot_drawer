@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use glam::{Affine2, Affine3A, Mat3A, Vec3};
+use glam::{Affine2, Affine3A, Mat3A, Mat4, Vec3};
 use crate::core::vis_geometry::{contour, Vertex};
 use crate::core::vis_geometry::contour::Contour;
 use crate::core::vis_geometry::gentraits::{Colorable, AffineTransformable};
@@ -37,11 +37,11 @@ impl AffineTransformable for ContourRender {
         self.contour.rotate(angle);
     }
 
-    fn set_transform(&mut self, matrix: Mat3A) {
+    fn set_transform(&mut self, matrix: Mat4) {
         self.contour.set_transform(matrix);
     }
 
-    fn apply_transform(&mut self, matrix: &Mat3A) {
+    fn apply_transform(&mut self, matrix: &Mat4) {
         self.contour.apply_transform(matrix);
     }
 }

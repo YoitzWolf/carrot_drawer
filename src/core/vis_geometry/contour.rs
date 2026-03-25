@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use glam::{Affine2, Mat3, Mat3A, Vec3};
+use glam::{Affine2, DMat4, Mat3, Mat3A, Mat4, Vec3};
 use crate::core::vis_geometry::gentraits::AffineTransformable;
 // pub enum CrossSectionSolver {
 //     Sum,
@@ -32,32 +32,32 @@ pub enum BasicContourShape {
 #[derive(Debug, Clone)]
 pub struct NaiveContour {
     pub shape: Vec<Vec<Vec3>>,
-    pub matrix: Mat3A,
+    pub matrix: Mat4,
 }
 
 impl NaiveContour {
-    pub fn new(shape: Vec<Vec<Vec3>>, matrix: Mat3A) -> Self {
+    pub fn new(shape: Vec<Vec<Vec3>>, matrix: Mat4) -> Self {
         Self { shape, matrix}
     }
 }
 
 impl AffineTransformable for NaiveContour {
-    fn set_transform(&mut self, matrix: Mat3A) {
+    fn set_transform(&mut self, matrix: Mat4) {
         todo!()
     }
 
-    fn apply_transform(&mut self, matrix: &Mat3A) {
+    fn apply_transform(&mut self, matrix: &Mat4) {
         self.matrix = matrix * &self.matrix;
     }
 
     fn rotate(&mut self, angle: f32) {
-        self.apply_transform(&Mat3A::from_angle(angle));
+        self.apply_transform(&Mat4::from_rotation_z(angle));
     }
 }
 
 impl Contour for NaiveContour {
     fn to_vertex_list(&self) -> Vec<Vec<Vec3>> {
-        self.shape.iter().map(|x| x.iter().map(|x| {self.matrix * x}).collect()).collect()
+        self.shape.iter().map(|x| x.iter().map(|x| {self.matrix.transform_point3(x.clone())}).collect()).collect()
     }
 
     fn box_clone(&self) -> Box<dyn Contour> {
@@ -69,26 +69,26 @@ impl Contour for NaiveContour {
 #[derive(Debug, Clone)]
 pub struct BasicContour {
     shape: BasicContourShape,
-    matrix: Mat3A,
+    matrix: Mat4,
 }
 
 impl BasicContour {
-    pub fn new(shape: BasicContourShape, matrix: Mat3A) -> Self {
+    pub fn new(shape: BasicContourShape, matrix: Mat4) -> Self {
         Self{shape, matrix}
     }
 }
 
 impl AffineTransformable for BasicContour {
-    fn set_transform(&mut self, matrix: Mat3A) {
+    fn set_transform(&mut self, matrix: Mat4) {
         self.matrix = matrix;
     }
 
-    fn apply_transform(&mut self, matrix: &Mat3A) {
+    fn apply_transform(&mut self, matrix: &Mat4) {
         self.matrix = matrix * &self.matrix;
     }
 
     fn rotate(&mut self, angle: f32) {
-        self.apply_transform(&Mat3A::from_angle(angle));
+        self.apply_transform(&Mat4::from_rotation_z(angle));
     }
 }
 
@@ -100,10 +100,10 @@ impl Contour for BasicContour {
             BasicContourShape::Square => {
                 vec![
                     vec![
-                        m*Vec3::new(-1.0, -1.0, 0.0),
-                        m*Vec3::new(1.0, -1.0, 0.0),
-                        m*Vec3::new(1.0, 1.0, 0.0),
-                        m*Vec3::new(-1.0, 1.0, 0.0),
+                        m.transform_point3(Vec3::new(-1.0, -1.0, 0.0)),
+                        m.transform_point3(Vec3::new(1.0, -1.0, 0.0)),
+                        m.transform_point3(Vec3::new(1.0, 1.0, 0.0)),
+                        m.transform_point3(Vec3::new(-1.0, 1.0, 0.0)),
                     ]
                 ]
             },
@@ -111,10 +111,10 @@ impl Contour for BasicContour {
                 let height = height/2.0;
                 vec![
                     vec![
-                        m*Vec3::new(-1.0, -height, 0.0),
-                        m*Vec3::new(1.0, -height, 0.0),
-                        m*Vec3::new(1.0, height, 0.0),
-                        m*Vec3::new(-1.0, height, 0.0),
+                        m.transform_point3(Vec3::new(-1.0, -height, 0.0)),
+                        m.transform_point3(Vec3::new(1.0, -height, 0.0)),
+                        m.transform_point3(Vec3::new(1.0, height, 0.0)),
+                        m.transform_point3(Vec3::new(-1.0, height, 0.0)),
                     ]
                 ]
             },
@@ -124,16 +124,16 @@ impl Contour for BasicContour {
                     (0..n).map(
                         |i| {
                             // Vec3::new(0.5, 0.5, 0.0) +
-                                m*Vec3::new((p*i as f32).cos(), (p*i as f32).sin(), 0.0)
+                            m.transform_point3(Vec3::new((p*i as f32).cos(), (p*i as f32).sin(), 0.0))
                         }
                     ).collect()
                 ]
             },
             BasicContourShape::Triangle(a, b) => {
                 vec![vec![
-                    m*Vec3::new(1.0, 0.0, 0.0),
-                    m*Vec3::new(a.cos(), a.sin(), 0.0),
-                    m*Vec3::new(b.sin(), b.cos(), 0.0),
+                    m.transform_point3(Vec3::new(1.0, 0.0, 0.0)),
+                    m.transform_point3(Vec3::new(a.cos(), a.sin(), 0.0)),
+                    m.transform_point3(Vec3::new(b.sin(), b.cos(), 0.0)),
                 ]]
             },
             // BasicContour::Sector(_) => {

@@ -1,6 +1,6 @@
 use std::f32::consts::PI;
 use std::time::Duration;
-use glam::{Mat3A, Vec2, Vec3};
+use glam::{Mat3A, Mat4, Vec2, Vec3};
 use log::info;
 use winit::event_loop::{ControlFlow, EventLoop, EventLoopClosed, EventLoopProxy};
 use tokio;
@@ -23,24 +23,45 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
         let mut r = 0;
         let mut layer = Layer::new(Some("base layer".to_string()));
         layer.push(0, Box::new(ContourRender{
-            contour: Box::new(BasicContour::new(BasicContourShape::NPolygon(3), Mat3A::IDENTITY)),
+            contour: Box::new(BasicContour::new(BasicContourShape::NPolygon(3), Mat4::IDENTITY)),
+            colors: vec![Vec3::new(1.0, 0.0, 0.0); 3],
+        }));
+        layer.push(1, Box::new(ContourRender{
+            contour: Box::new(BasicContour::new(BasicContourShape::NPolygon(3), Mat4::IDENTITY)),
             colors: vec![Vec3::new(1.0, 0.0, 0.0); 3],
         }));
         let K = 128;
-        tokio::time::sleep(Duration::from_millis(1)).await;
+        tokio::time::sleep(Duration::from_millis(10)).await;
         loop {
-            tokio::time::sleep(Duration::from_millis(1)).await;
+            tokio::time::sleep(Duration::from_nanos(0)).await;
             {
                 let v = layer.get_mut(0).unwrap();
                 v.set_transform(
-                    (
-                        Mat3A::from_scale(
-                            Vec2::new(
-                                (r as f32 / K as f32 * 2.0 * PI).sin() / 2.0 + 0.5,
-                                (r as f32 / K as f32 * 2.0 * PI).sin() / 2.0 + 0.5
-                            )
-                        ) * Mat3A::from_angle(r as f32 / K as f32 * 2.0 * PI)
-                    )
+                    Mat4::from_scale(
+                        Vec3::new(
+                            (r as f32 / K as f32 * 2.0 * PI).sin() / 2.0 + 0.5,
+                            (r as f32 / K as f32 * 2.0 * PI).sin() / 2.0 + 0.5,
+                            1.0
+                        )
+                    ) * Mat4::from_rotation_z(r as f32 / K as f32 * 2.0 * PI)
+                );
+                v.set_colors(
+                    vec![
+                        Vec3::new(f32::sin(r as f32 / K as f32 * PI * 2.0)/2.0 + 0.5, 0.0, 0.0),
+                        Vec3::new(0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + 2.0*PI/3.0)/2.0 + 0.5, 0.0),
+                        Vec3::new(0.0, 0.0, f32::sin(r as f32 / K as f32 * PI * 2.0 + 4.0*PI/3.0)/2.0 + 0.5),
+                    ]
+                );
+
+                let v = layer.get_mut(1).unwrap();
+                v.set_transform(
+                    Mat4::from_scale(
+                        Vec3::new(
+                            (r as f32 / K as f32 * 2.0 * PI + PI).sin() / 2.0 + 0.5,
+                            (r as f32 / K as f32 * 2.0 * PI + PI).sin() / 2.0 + 0.5,
+                            1.0
+                        )
+                    ) * Mat4::from_rotation_z(r as f32 / K as f32 * 2.0 * PI + PI / 3.0)
                 );
                 v.set_colors(
                     vec![
