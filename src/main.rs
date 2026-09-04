@@ -12,6 +12,8 @@ use app_setup::*;
 
 mod core;
 use core::*;
+use crate::core::vis_geometry::flat_field::{FlatField, FlatFieldPoint};
+use crate::core::vis_geometry::gentraits::{AffineTransformable, Colorable};
 use crate::core::vis_geometry::render_object::RenderObject;
 use crate::core::graphics2d::layer::Layer;
 use crate::core::vis_geometry::contour::{BasicContour, BasicContourShape};
@@ -30,10 +32,50 @@ fn runner(mut proxy: EventLoopProxy<StateUpdate>) {
             contour: Box::new(BasicContour::new(BasicContourShape::NPolygon(3), Mat4::IDENTITY)),
             colors: vec![Vec3::new(1.0, 0.0, 0.0); 3],
         }));
-        let K = 128;
+        let h= 0.5f32;
+        let shift = -2.5f32;
+        let N = 20;
+        layer.push(2, Box::new(FlatField{
+            field: {
+                (0..N).map(
+                    |i| {
+                        (0..N).map(
+                            |j| {
+                                FlatFieldPoint::new(
+                                    Vec3::new(
+                                        h*j as f32 + shift,
+                                        h*i as f32 + shift,
+                                        0.0
+                                    ),
+                                Vec3::new(
+                                    ((i as f32).powi(2) + (j as f32).powi(2) - 16.),
+                                    ((i as f32 - 5.5).powi(2) + (j as f32 - 5.5).powi(2) - 25.),
+                                    1.0
+                                ))
+                            }
+                        ).collect::<Vec::<_>>()
+                    }
+                ).collect::<Vec::<_>>()
+            },
+        }));
+        let K = 1024;
         tokio::time::sleep(Duration::from_millis(10)).await;
         loop {
-            tokio::time::sleep(Duration::from_nanos(0)).await;
+            tokio::time::sleep(Duration::from_millis(0)).await;
+            {
+                let v = layer.get_mut(2).unwrap();
+                v.set_colors(
+                    (0..N*N).map(
+                        |x| {
+                            Vec3::new(
+                                ( -(x % N % 2) as f32 * r as f32 / K as f32 * 2.0 * PI).cos() / 2.0 + 0.5,
+                                ( (x / N % 2) as f32  * r as f32 / K as f32 * 2.0 * PI).sin() / 2.0 + 0.5,
+                                ( (x % 2) as f32 * r as f32 / K as f32 * 2.0 * PI).sin() / 2.0 + 0.5
+                            )
+                        }
+                    ).collect()
+                );
+            }
             {
                 let v = layer.get_mut(0).unwrap();
                 v.set_transform(

@@ -4,7 +4,7 @@ use crate::core::vis_geometry::gentraits::{AffineTransformable, Colorable};
 use crate::core::vis_geometry::render_object::RenderObject;
 use crate::core::vis_geometry::Vertex;
 
-pub trait InLayerRenderObject: crate::core::vis_geometry::render_object::RenderObject<3> + Colorable {
+pub trait InLayerRenderObject: RenderObject<3> + Colorable {
     fn box_clone(&self) -> Box<dyn InLayerRenderObject>;
 }
 

@@ -1,5 +1,5 @@
 use std::fmt::Debug;
-use glam::{Affine2, DMat4, Mat3, Mat3A, Mat4, Vec3};
+use glam::{Mat4, Vec3};
 use crate::core::vis_geometry::gentraits::AffineTransformable;
 // pub enum CrossSectionSolver {
 //     Sum,
